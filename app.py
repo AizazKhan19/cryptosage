@@ -1,5 +1,7 @@
 import streamlit as st
 import requests
+from technical_indicators import calulate_rsi
+from technical_indicators import calculate_macd
 
 st.title("CryptoSage")
 
@@ -10,7 +12,7 @@ st.sidebar.title("CryptoCurrencies")
 
 # Dropdown menu for selecting cryptocurrency------------------------------------------------
 
-cryptocurrencies = ["BTC", "ETH"]
+cryptocurrencies = ["---Select Coin---", "BTC", "ETH"]
 selected_crypto = st.sidebar.selectbox( 'Choose a cryptocurrency', cryptocurrencies)
 
 # Mapping selected cryptocurrency to Binance symbol------------------------------------------------
@@ -20,13 +22,13 @@ crypto_map = {
     "ETH": "ETHUSDT"
 }
 
-symbol = crypto_map[selected_crypto]
+
     
 
 # TImeframe selection---------------------------------------------------------------------
 
 st.sidebar.title("Timeframe")
-timeframes = ["1m", "5m", "15m", "30m", "1h", "4h", "1d"]
+timeframes = ["---Select Timeframe---", "1m", "5m", "15m", "30m", "1h", "4h", "1d"]
 selected_timeframe =  st.sidebar.selectbox('Choose a timeframe', timeframes)
 
 
@@ -35,50 +37,70 @@ selected_timeframe =  st.sidebar.selectbox('Choose a timeframe', timeframes)
 clicked = st.sidebar.button('Analyze')
 
 if clicked:
+    # validtion for cryptocurrency and timeframe selection
+
+    if selected_crypto == "---Select Coin---" or selected_timeframe == "---Select Timeframe---":
+        st.sidebar.error("⚠️ Please select both cryptocurrency and timeframe properly!")
+        st.stop()
+
+    symbol = crypto_map[selected_crypto]
+    
     with st.spinner("Analyzing..."):
         st.write(f"Analyzing {symbol} on {selected_timeframe} timeframe...")
 
-# Fetching price from binance API-----------------------------------------------------------------------
+        #  Fetching price---------------------------------------------------------------
 
-url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
+        url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
+        response = requests.get(url)
+        data = response.json()
+        price = float(data['price'])
+        price = round(price, 2)
+        
+        st.subheader(f"Current Price of {selected_crypto}")
+        st.success(f"${price}")
+        
+        # Chart code--------------------------------------------------------------------
 
-# sending request
-response = requests.get(url)
+        price_chart_url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={selected_timeframe}&limit=50"
+        price_chart_response = requests.get(price_chart_url)
+        kline_data = price_chart_response.json()
+        
+        close_prices = []
+        for row in kline_data:
+            close_prices.append(float(row[4]))
+        
+        st.subheader(f"Price Chart of {selected_crypto} on {selected_timeframe} timeframe")
+        st.line_chart(close_prices)
+        
+        # RSI code-----------------------------------------------------------------------
 
-# print the data
-# st.write(response.json())
+        current_rsi = calulate_rsi(close_prices)
+        st.subheader("📊 Technical Indicators")
+        st.metric("RSI (14-period)", f"{current_rsi:.2f}")
+        
+        if current_rsi > 70:
+            st.warning("⚠️ Overbought - Potential SELL signal")
+        elif current_rsi < 30:
+            st.success("✅ Oversold - Potential BUY signal")
+        else:
+            st.info("➡️ Neutral - No strong signal")
 
-#  extracting price from  response. for that first we need to store json data into varibale.
+        # MACD code----------------------------------------------------------------------
 
-data = response.json()
+        macd_value, signal_value, macd_decision = calculate_macd(close_prices)
 
-# converting price to float because it is in string format
-price = float(data['price'])
+        # using columns for side by side display
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("MACD Line", f"{macd_value:.2f}")
+        with col2:
+            st.metric("Signal Line", f"{signal_value:.2f}")
 
-# rounding off price to 2 decimal places
-price = round(price, 2)
+        # show decision with color coding
+        if "BUY" in macd_decision:
+            st.success(f"📈 {macd_decision}")
+        elif "SELL" in macd_decision:
+            st.warning(f"📉 {macd_decision}")
+        else:
+            st.info(f"➡️ {macd_decision}")
 
-# displaying price
-st.subheader(f"Current Price of {selected_crypto}")
-st.success(f"${price}")
-
-
-# showing price chart of selected cryptocurrency using binance API
-
-price_chart_url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={selected_timeframe}&limit=50"
-
-# sending request
-price_chart_response = requests.get(price_chart_url)
-
-# storing kline data into varibale
-kline_data = price_chart_response.json()
-
-# creating empty list
-close_prices = []
-
-for row in kline_data:
-    close_prices.append(float(row[4]))
-
-# displaying price chart
-st.subheader(f"Price Chart of {selected_crypto} on {selected_timeframe} timeframe")
-st.line_chart(close_prices)
