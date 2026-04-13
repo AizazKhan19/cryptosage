@@ -104,3 +104,4 @@ if clicked:
         else:
             st.info(f"➡️ {macd_decision}")
 
+
