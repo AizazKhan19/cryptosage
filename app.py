@@ -2,6 +2,12 @@ import streamlit as st
 import requests
 from technical_indicators import calulate_rsi
 from technical_indicators import calculate_macd
+import joblib
+import numpy as np
+
+# load the trained model---------------------------------------------------------------
+
+model = joblib.load('linear_regression_model.plk')
 
 st.title("CryptoSage")
 
@@ -103,5 +109,30 @@ if clicked:
             st.warning(f"📉 {macd_decision}")
         else:
             st.info(f"➡️ {macd_decision}")
+
+        # Price Prediction code-------------------------------------------------------
+        st.subheader("🔮 Price Prediction")
+        st.info("Predicting the next closing price based on the last 5 closing prices using a Linear Regression model.")    
+        
+        # normalizing the close prices for prediction
+        close_prices = np.array(close_prices)
+        normalized_close_prices = (close_prices - min(close_prices)) / (max(close_prices) - min(close_prices))
+
+        # picking last 5 close prices from the normalized close prices
+        last_five_values = normalized_close_prices[-5:]
+
+        # reshaping the last five normalize values
+        last_five_reshaped_values = last_five_values.reshape(1, -1)
+
+        # predicting the price
+
+        predicted_price = model.predict(last_five_reshaped_values)
+
+        # denormalizing the predicted price
+        denormalized_predicted_price = predicted_price * (max(close_prices) - min(close_prices)) + min(close_prices)
+
+        st.metric("Predicted Next Closing Price", f"${denormalized_predicted_price[0]:.2f}")
+
+
 
 
