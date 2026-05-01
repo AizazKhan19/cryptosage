@@ -1,14 +1,10 @@
-<<<<<<< HEAD
 import google.genai.types as genai_types
-=======
->>>>>>> 91c31bb76169473d1896f8f24252401d1422f9fe
 import streamlit as st
 import requests
 from technical_indicators import calulate_rsi
 from technical_indicators import calculate_macd
 import joblib
 import numpy as np
-<<<<<<< HEAD
 from agents.technical_agent_indicator import TechnicalAnalysisAgent
 from google.adk.runners import InMemoryRunner
 import asyncio
@@ -18,8 +14,6 @@ dotenv.load_dotenv()
 
 
 
-=======
->>>>>>> 91c31bb76169473d1896f8f24252401d1422f9fe
 
 # load the trained model---------------------------------------------------------------
 
@@ -149,7 +143,6 @@ if clicked:
 
         st.metric("Predicted Next Closing Price", f"${denormalized_predicted_price[0]:.2f}")
 
-<<<<<<< HEAD
         # calling techincal agent-------------------------------------------------------------------
         st.subheader("🤖 Technical Analysis Agent")
 
@@ -165,8 +158,6 @@ if clicked:
         st.write(response_text)
 
 
-=======
->>>>>>> 91c31bb76169473d1896f8f24252401d1422f9fe
 
 
 
